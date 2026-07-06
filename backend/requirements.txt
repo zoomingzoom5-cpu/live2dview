@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+ultralytics
+opencv-python
+numpy
+torch
+torchvision
+pyquaternion
+matplotlib
+PyYAML
+python-multipart
+websockets

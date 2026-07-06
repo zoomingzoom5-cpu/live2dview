@@ -1,0 +1,17 @@
+C:\Users\zoomi\monolocotest\backend\main.py:56: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Started server process [25948]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     150.89.160.1:0 - "WebSocket /ws/process" [accepted]
+INFO:     connection open
+INFO:     150.89.160.1:0 - "WebSocket /ws/process" [accepted]
+INFO:     connection open
+INFO:     connection closed
+INFO:     connection closed
