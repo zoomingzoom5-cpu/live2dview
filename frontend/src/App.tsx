@@ -13,6 +13,7 @@ function App() {
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvasBevRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const demoMode = new URLSearchParams(window.location.search).get('demo') === '1';
   const [detections, setDetections] = useState<Detection[]>([]);
   const [detectedCount, setDetectedCount] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
@@ -23,6 +24,11 @@ function App() {
   };
 
   useEffect(() => {
+    if (demoMode) {
+      setIsConnected(true);
+      return;
+    }
+
     const configuredUrl = import.meta.env.VITE_WS_URL;
     const isViteDevServer = window.location.port === '5173';
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -53,9 +59,13 @@ function App() {
     return () => {
       ws.close();
     };
-  }, []);
+  }, [demoMode]);
 
   useEffect(() => {
+    if (demoMode) {
+      return;
+    }
+
     // Start Webcam
     async function startWebcam() {
       try {
@@ -76,9 +86,56 @@ function App() {
       }
     }
     startWebcam();
-  }, []);
+  }, [demoMode]);
 
   useEffect(() => {
+    if (!demoMode) {
+      return;
+    }
+
+    const createDemoDetections = (tick: number): Detection[] => {
+      const drift = Math.sin(tick / 10) * 0.35;
+      const walk = Math.cos(tick / 12) * 0.25;
+      return [
+        {
+          id: 1,
+          pos3d: [-1.2 + drift, 0, 4.8 + walk],
+          trajectory: [[-1.0, 4.45], [-0.75, 4.15], [-0.5, 3.85], [-0.25, 3.55]],
+          quality: 'pose-height',
+        },
+        {
+          id: 2,
+          pos3d: [1.45 - drift * 0.5, 0, 6.6],
+          trajectory: [[1.2, 6.3], [0.95, 6.05], [0.7, 5.8], [0.45, 5.55]],
+          quality: 'homography-ready',
+        },
+        {
+          id: 3,
+          pos3d: [0.1, 0, 2.9 + walk * 0.4],
+          trajectory: [[0.25, 3.1], [0.45, 3.35], [0.65, 3.6]],
+          quality: 'box-height',
+        },
+      ];
+    };
+
+    let tick = 0;
+    const updateDemo = () => {
+      const nextDetections = createDemoDetections(tick);
+      setDetections(nextDetections);
+      setDetectedCount(nextDetections.length);
+      tick += 1;
+    };
+
+    updateDemo();
+    const interval = setInterval(updateDemo, 300);
+    return () => clearInterval(interval);
+  }, [demoMode]);
+
+  useEffect(() => {
+    if (demoMode) {
+      return;
+    }
+
     // Send frames to backend
     const interval = setInterval(() => {
       if (wsRef.current && isConnected && videoRef.current && captureCanvasRef.current) {
@@ -102,7 +159,7 @@ function App() {
     }, 100); // 10 FPS
 
     return () => clearInterval(interval);
-  }, [isConnected]);
+  }, [demoMode, isConnected]);
 
   // Draw Bird's Eye View
   useEffect(() => {
@@ -176,7 +233,7 @@ function App() {
             Debug View
           </button>
           <div className={`status ${isConnected ? 'online' : 'offline'}`}>
-            {isConnected ? 'Backend Online' : 'Connecting to Backend...'}
+            {demoMode ? 'Demo Mode' : isConnected ? 'Backend Online' : 'Connecting to Backend...'}
           </div>
         </div>
       </header>

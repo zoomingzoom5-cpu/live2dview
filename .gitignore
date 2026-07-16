@@ -5,9 +5,30 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
 
 # Virtual environments
 .venv
+
+# Local logs and runtime output
+*.log
+server.log
+server-error.log
+cloudflared.log
+cloudflared-error.log
+
+# Local configuration and secrets
+.env
+.env.*
+
+# Frontend generated files
 frontend/node_modules/
 frontend/dist/
+
+# Model weights and checkpoints
 backend/yolov8n-pose.pt
+*.pt
+*.pth
+*.onnx
+*.ckpt
+models/**/checkpoints/
