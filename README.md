@@ -1,37 +1,37 @@
 # Live2DSpaceView
 
-Android camera footage is processed with YOLO pose estimation and monocular geometry, then visualized as privacy-preserving 2D space mapping. The public web UI only shows the number of detected people and their mapped positions; the raw camera/debug view is available only from the local PC.
+Android のカメラ映像を YOLO の姿勢推定と単眼カメラ幾何で解析し、人物の位置を 2D 空間上にマッピングするシステムです。公開用の Web UI にはカメラ映像を表示せず、検出人数とマッピング結果だけを表示します。生のカメラ映像や関節検出の様子は、PC ローカル専用のデバッグ画面で確認できます。
 
 ![Live2DSpaceView demo](docs/screenshots/live2dspaceview-demo.png)
 
-## What It Shows
+## できること
 
-- YOLO pose detection for people from a monocular Android camera stream.
-- MonoLoco-inspired position estimation from 2D joints, foot anchors, body height, and camera intrinsics.
-- Bird's-eye-view mapping with per-person IDs and simple future trajectory hints.
-- Privacy-first frontend: camera pixels are hidden from the public UI.
-- Local-only debug view at `http://127.0.0.1:8000/debug` for checking boxes, joints, anchors, and estimated coordinates on the PC.
+- Android ブラウザの単眼カメラ映像から YOLO pose で人物を検出します。
+- 2D 関節、足元アンカー、人物の見かけ上の高さ、カメラ内部パラメータを使い、MonoLoco に着想を得た距離推定を行います。
+- 人物ごとの ID、現在位置、簡易的な移動予測を俯瞰マップに表示します。
+- 公開 UI にはカメラ映像を出さず、人数と座標情報だけを返すプライバシー重視の構成です。
+- PC ローカル限定の `http://127.0.0.1:8000/debug` では、検出枠、関節点、足元アンカー、推定座標を確認できます。
 
-## Architecture
+## システム構成
 
 ```mermaid
 flowchart LR
-  A["Android browser camera"] -->|JPEG frame over WebSocket| B["FastAPI backend"]
-  B --> C["YOLO pose detector"]
-  C --> D["Monocular geometry mapping"]
-  D -->|count + mapped coordinates only| E["Live2DSpaceView web UI"]
-  B -->|local host only| F["PC debug camera view"]
+  A["Android ブラウザカメラ"] -->|WebSocket で JPEG フレーム送信| B["FastAPI バックエンド"]
+  B --> C["YOLO pose 検出"]
+  C --> D["単眼カメラ幾何による座標推定"]
+  D -->|人数 + マッピング座標のみ返却| E["Live2DSpaceView Web UI"]
+  B -->|ローカルホスト限定| F["PC デバッグ画面"]
 ```
 
-## Quick Start
+## セットアップ
 
-Requirements:
+必要なもの:
 
-- Python with `uv`
-- Node.js and npm
-- A webcam or Android browser camera
+- Python と `uv`
+- Node.js と npm
+- Web カメラ、または Android ブラウザのカメラ
 
-Build the frontend:
+フロントエンドをビルドします。
 
 ```bash
 cd frontend
@@ -39,7 +39,7 @@ npm install
 npm run build
 ```
 
-Start the backend:
+バックエンドを起動します。
 
 ```bash
 cd ../backend
@@ -47,50 +47,52 @@ uv sync
 uv run main.py
 ```
 
-Open the app:
+アプリを開きます。
 
 ```text
 http://127.0.0.1:8000
 ```
 
-Open the local debug camera view on the PC:
+PC でローカル専用のデバッグ画面を開きます。
 
 ```text
 http://127.0.0.1:8000/debug
 ```
 
-Preview the UI without a camera:
+カメラなしで UI を確認したい場合は、デモモードを使えます。
 
 ```text
 http://127.0.0.1:8000/?demo=1
 ```
 
-## Android Camera Setup
+## Android カメラの向き
 
-Landscape is recommended for normal room-scale mapping because it captures a wider horizontal area and keeps multiple people in frame. Portrait can work in narrow corridors or when the camera is close, but the estimator works best when each person's head and feet are visible.
+通常の部屋サイズのマッピングでは、横向きがおすすめです。横向きの方が水平方向に広く撮影でき、複数人を同時にフレームへ入れやすいためです。
 
-When exposing the local backend to an Android phone, use a tunnel such as Cloudflare Tunnel and open the generated HTTPS URL on the phone. Quick Tunnel URLs are temporary, so regenerate the URL when the tunnel process stops.
+縦向きは、廊下のように細長い空間や、カメラと人物の距離が近い場合には有効です。どちらの向きでも、頭から足元までが映っているほど推定精度が安定します。
 
-## Configuration
+Android 端末からローカルバックエンドへ接続する場合は、Cloudflare Tunnel などで HTTPS URL を発行し、その URL を Android 側で開きます。Quick Tunnel の URL は一時的なものなので、トンネルを止めた場合は再発行してください。
 
-The backend works without manual calibration, but accuracy improves when camera values are provided:
+## 設定項目
 
-| Variable | Purpose |
+手動キャリブレーションなしでも動作しますが、実カメラの値を指定すると座標推定の精度が上がります。
+
+| 変数 | 用途 |
 | --- | --- |
-| `CAMERA_FX`, `CAMERA_FY` | Camera focal length in pixels |
-| `CAMERA_CX`, `CAMERA_CY` | Principal point in pixels |
-| `HUMAN_HEIGHT_M` | Assumed human height, default `1.70` |
-| `BEV_HOMOGRAPHY` | Optional 3x3 image-to-floor homography |
-| `YOLO_POSE_MODEL` | Local YOLO pose model path |
-| `DEBUG_BROWSER_WINDOW` | Set `0` to stop auto-opening the PC debug view |
-| `DEBUG_CAMERA_WINDOW` | Set `1` to try native OpenCV `cv2.imshow` |
+| `CAMERA_FX`, `CAMERA_FY` | カメラの焦点距離をピクセル単位で指定 |
+| `CAMERA_CX`, `CAMERA_CY` | カメラの主点をピクセル単位で指定 |
+| `HUMAN_HEIGHT_M` | 想定する人物身長。デフォルトは `1.70` |
+| `BEV_HOMOGRAPHY` | 任意の 3x3 画像座標から床面座標へのホモグラフィ |
+| `YOLO_POSE_MODEL` | ローカルの YOLO pose モデルパス |
+| `DEBUG_BROWSER_WINDOW` | `0` にすると PC デバッグ画面の自動起動を止めます |
+| `DEBUG_CAMERA_WINDOW` | `1` にすると OpenCV の `cv2.imshow` 表示を試します |
 
-## What Is Committed
+## Git に含めるもの・含めないもの
 
-This repository intentionally includes source code, configuration, lock files, documentation, and screenshots.
+このリポジトリには、ソースコード、設定ファイル、ロックファイル、ドキュメント、動作画面のスクリーンショットを含めています。
 
-It intentionally excludes runtime logs, `.env` files, virtual environments, frontend build output, local tunnel logs, YOLO weights, and model checkpoints. Those files can contain local paths, temporary URLs, machine-specific output, or large binary artifacts that do not belong in a portfolio repository.
+一方で、実行ログ、`.env`、仮想環境、フロントエンドのビルド成果物、ローカルトンネルのログ、YOLO の重み、モデルチェックポイントは含めていません。これらはローカルパス、一時 URL、環境依存の出力、大きなバイナリを含む可能性があるため、公開用ポートフォリオには不要です。
 
-## Project Notes
+## 補足
 
-The bundled MonoTransmotion reference is used as research context. The running system uses a lightweight YOLO-pose geometry wrapper so it can produce coordinates without requiring unpublished training checkpoints.
+同梱している MonoTransmotion は研究背景の参照として扱っています。実際に動作する本システムでは、未公開の学習済みチェックポイントに依存せず座標を出せるよう、YOLO pose と軽量な幾何推定ラッパーを使っています。
