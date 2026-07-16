@@ -29,7 +29,7 @@ flowchart LR
 
 - Python と `uv`
 - Node.js と npm
-- Web カメラ、または Android ブラウザのカメラ
+- Web カメラ
 
 フロントエンドをビルドします。
 
